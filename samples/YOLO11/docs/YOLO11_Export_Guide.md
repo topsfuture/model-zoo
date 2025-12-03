@@ -9,7 +9,7 @@ pip3 install ultralytics
 
 
 ## 2. 导出onnx模型
-如果使用tpu-mlir编译模型，则必须先将Pytorch模型导出为onnx模型。YOL0v8官方仓库提供了模型导出接口，可以直接使用它导出onnx模型：
+如果使用taNNTC编译模型，则必须先将Pytorch模型导出为onnx模型。YOL0v8官方仓库提供了模型导出接口，可以直接使用它导出onnx模型：
 
 ```python
 from ultralytics import YOLO
@@ -20,5 +20,4 @@ model.export(format="onnx", opset=17, dynamic=True)  # creates 'yolo11n.onnx'
 ```
 
 上述脚本会在原始pt模型所在目录下生成导出的`yolo11s.onnx`模型。
-
 

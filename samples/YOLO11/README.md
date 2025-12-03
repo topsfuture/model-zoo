@@ -25,7 +25,7 @@
 
 ## 1. 简介
 本例程可在ea65xx平台上进行YOLO11检测模型的推理，支持加载浮点和量化模型，适用于COCO等常见数据集。模型来源：
-https://github.com/airockchip/ultralytics_yolo11
+https://github.com/ultralytics/ultralytics
 
 ## 2. 特性
 ### 2.1 目录结构说明
@@ -135,7 +135,7 @@ Usage: yolo11s_det_soc [params]
 ```
 测试结束后，会将预测的图片保存在results/下，预测的结果保存在yolo11s_fp16.json中，同时会打印预测结果、推理时间等信息。
 
-### 4.3 模型精度评估
+### 4.4 模型精度评估
 
 通过以上步骤的，在板端可以获得用于精度验证的json文件，我们需要将其拷贝至pc端。精度验证在pc端进行，验证的脚本为YOLO11/python/utils/coco_eval.py，真实标注json文件在datasets下（instances_val2017_1000.json），具体执行路径请用户自行指定。
 

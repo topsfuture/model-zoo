@@ -42,9 +42,9 @@ ROOT_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 echo "root dir: $ROOT_DIR"
 
 
-DOWNLOAD_MODEL_URL="https://pub-2bc59661537449fcb5161f11c05ebb6f.r2.dev/models/yolo11/models.zip"
-DOWNLOAD_DATASET_URL="https://pub-2bc59661537449fcb5161f11c05ebb6f.r2.dev/datasets/coco_val_2017/datasets.zip"
-DOWNLOAD_TEST_IMAGE_URL="https://pub-2bc59661537449fcb5161f11c05ebb6f.r2.dev/test_image/yolo11/test_images.zip"
+DOWNLOAD_MODEL_URL="https://models.topsfuture.com.cn/models/yolo11/models.zip"
+DOWNLOAD_DATASET_URL="https://models.topsfuture.com.cn/datasets/coco_val_2017/datasets.zip"
+DOWNLOAD_TEST_IMAGE_URL="https://models.topsfuture.com.cn/test_image/yolo11/test_images.zip"
 
 echo "开始下载：$DOWNLOAD_MODEL_URL"
 curl -o "models.zip" "$DOWNLOAD_MODEL_URL" || { 
