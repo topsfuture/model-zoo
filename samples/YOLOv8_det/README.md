@@ -42,7 +42,7 @@ https://github.com/ultralytics/ultralytics
 
 ## 2.2 SDK特性
 - 支持EA6530
-- 支持FP16、INT8以及UINT8模型编译和推理
+- 支持FP16、INT8模型编译和推理
 - 支持图片测试
 - 支持C++推理
 
@@ -91,12 +91,12 @@ convert_model build --output_dir ../yolov8 --config models/yolov8s_config_int8.j
 cpp目录下提供了C++例程以供参考使用，具体情况说明如下：
 | 序号 | C++例程 | 说明 |
 | ---- | ---- | ---- |
-| 1 | yolov8s_det_soc | 使用ta_opencv前处理，taruntime推理 |
+| 1 | yolov8s_det_soc | 使用taOpenCV前处理，taRuntime推理 |
 
 ### 4.1 环境准备
-在使用EA65xx平台时，刷机后系统已经预装了相应的taruntime、ta-opencv库，无需额外安装，可以直接使用它作为运行环境。通常还需要一台x86主机作为开发环境，用于交叉编译C++程序。
+在使用EA65xx平台时，刷机后系统已经预装了相应的taRuntime、taOpenCV库，无需额外安装，可以直接使用它作为运行环境。通常还需要一台x86主机作为开发环境，用于交叉编译C++程序。
 ### 4.2 编译
-通常需要在x86主机上交叉编译程序，您需要在x86上使用TACO SDK搭建交叉编译环境，具体请参考[交叉编译环境搭建](../../docs/环境安装指南.md#21-交叉编译环境搭建)。本例程主要依赖ta-opencv、ta-runtime等库。
+通常需要在x86主机上交叉编译程序，您需要在x86上使用TACO SDK搭建交叉编译环境，具体请参考[交叉编译环境搭建](../../docs/环境安装指南.md#21-交叉编译环境搭建)。本例程主要依赖taOpenCV、taRuntime等库。
 交叉编译环境搭建好后，使用交叉编译工具链编译生成可执行文件：
 ```bash
 cd cpp

@@ -152,12 +152,54 @@ int YOLOV8::preprocess_image(const cv::Mat& src, cv::Mat& dst,PreprocessParams& 
     return 0;
     
 }
-static uint16_t f32_to_f16(float value) {
-    uint32_t x = *reinterpret_cast<uint32_t*>(&value);
-    uint16_t h = ((x >> 16) & 0x8000) | 
-                ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) |
-                ((x >> 13) & 0x03ff);
-    return h;
+uint16_t float32_to_float16(float value) {
+    // 此函数实现将 float32 转换为 float16 格式
+    uint32_t bits = *reinterpret_cast<uint32_t*>(&value);
+    uint16_t sign = (bits >> 31) & 0x1;
+    int exponent = (bits >> 23) & 0xFF;
+    uint32_t fraction = bits & 0x7FFFFF;
+    
+    // 处理特殊情况（0，无穷大，NaN）
+    if (exponent == 0 && fraction == 0) {
+        return sign << 15;  // 正零或负零
+    }
+    if (exponent == 0xFF) {
+        if (fraction == 0) {
+            return (sign << 15) | 0x7C00;  // 无穷大
+        } else {
+            return (sign << 15) | 0x7E00;  // NaN
+        }
+    }
+    
+    // 调整指数（float32 偏移 127 -> float16 偏移 15）
+    exponent -= 127;
+    
+    // 处理下溢情况
+    if (exponent < -14) {
+        fraction = (0x800000 + fraction) >> (13 - exponent - 14);
+        fraction |= (fraction >> 13) & 1;  // 四舍五入
+        return (sign << 15) | fraction;
+    }
+    
+    // 处理上溢情况
+    if (exponent > 15) {
+        return (sign << 15) | 0x7C00;  // 上溢到无穷大
+    }
+    
+    // 正常情况下的转换
+    exponent += 15;
+    fraction >>= 13;
+    
+    // 四舍五入
+    if (fraction & 0x1000) {
+        fraction += 1;
+        if (fraction & 0x8000) {
+            fraction >>= 1;
+            exponent += 1;
+        }
+    }
+    
+    return (sign << 15) | (exponent << 10) | (fraction & 0x3FF);
 }
 void YOLOV8::normalize_and_quantize(uint8_t* src, void* dst, size_t num_elements, 
                                    const taconn_inout_attr_t& attr) {
@@ -175,7 +217,7 @@ void YOLOV8::normalize_and_quantize(uint8_t* src, void* dst, size_t num_elements
             uint16_t* dst_fp16 = static_cast<uint16_t*>(dst);
             for (size_t i = 0; i < num_elements; i++) {
                 float normalized = src[i] / 255.0f;
-                dst_fp16[i] = f32_to_f16(normalized);
+                dst_fp16[i] = float32_to_float16(normalized);
             }
         }
         else {

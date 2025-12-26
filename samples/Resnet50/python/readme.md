@@ -29,7 +29,7 @@ python quantize.py --onnx_path path/to/your/model.onnx --quantize_type int8 --ca
 
 参数说明：
 - `--onnx_path`：ONNX模型文件的路径
-- `--quantize_type`：量化类型（支持`int8`、`uint8`、`int16`）
+- `--quantize_type`：量化类型（支持`int8`、`int16`）
 - `--batch_size`：校准批次大小
 
 ### 2. 推理

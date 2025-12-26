@@ -18,13 +18,16 @@ Model Zoo 提供的例子分别位于 **sample** 和 **application** 两个目�
 
 | 示例算法 | 算法类别 | 编程语言 | 数据精度    | 支持芯片 |
 | -------- | -------- | -------- | ----------- | -------- |
-| YOLO11s  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
+| YOLO11_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
 | YOLOv8_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
+| YOLOv5_det   | 目标检测  | C++     | FP16 / INT8 | EA6530   |
 | Resnet50  | 图像分类 | C++      | FP16 / INT8 | EA6530   |
-| mobilenetv2 | 图像分类 | C++    | FP16 / INT8 | EA6530   |
+| MobileNetv2 | 图像分类 | C++    | FP16 / INT8 | EA6530   |
+| LPRNet    | 车牌识别 | C++      | FP16        | EA6530   |
+| CLIP      | 图文匹配 | C++      | FP16        | EA6530   |
+| YOLOv12_det   | 目标检测  | C++    | FP16  | EA6530   |
 
 - **application**：存放一些典型场景的典型应用
-
 
 ## 环境依赖
 
@@ -32,7 +35,7 @@ Model Zoo 主要依赖于以下工具，具体版本对应关系如下：
 
 | taNNTC | taRuntime | taOpenCV |
 | ------ | --------- | -------- |
-| 1.0.0  | 1.0.0     | 4.5.0    |
+| 1.0.0  | 1.0.0     | 4.5.4    |
 
 ## 快速入门
 

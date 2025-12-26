@@ -15,37 +15,41 @@ set(CMAKE_C_COMPILER riscv64-unknown-linux-gnu-gcc)
 set(CMAKE_ASM_COMPILER riscv64-unknown-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER riscv64-unknown-linux-gnu-g++)
 
+set(TPS_SDK_ROOT "/tps-sdk-for-mes20" CACHE STRING "")
+message(STATUS "TPS_SDK_ROOT: ${TPS_SDK_ROOT}")
+
 # include_directories(./soc240401_riscv64/include/ta_op)
 # include_directories(./soc240401_riscv64/include/Vivante_ML_Toolkit_OVXLIB_dev)
-include_directories(/tps-sdk-for-mes20/ta-base/ta-runtime/include)
+
 
 # 添加头文件搜索路径
 include_directories(
-    /tps-sdk-for-mes20/ta-vsp/ta-opencv/include
-    /tps-sdk-for-mes20/ta-vsp/ta-unify-9200O/include/ta_op
-    /tps-sdk-for-mes20/ta-vsp/ta-unify-9200O/include/ovxlib-package-dev
-    /tps-sdk-for-mes20/ta-vsp/ta-unify-9200O/include/Vivante_ML_Toolkit_OVXLIB_dev
-    /tps-sdk-for-mes20/ta-vsp/ta-unify-9200O/include/
-    /tps-sdk-for-mes20/ta-base/ta-cv/include
-    /tps-sdk-for-mes20/ta-vsp/ta-opencv/include/opencv4/
-    /tps-sdk-for-mes20/ta-vsp/ta-sys/include
-    /tps-sdk-for-mes20/ta-vsp/ta-libdec/include
-    /tps-sdk-for-mes20/ta-vsp/ta-ffmpeg/include
-    /tps-sdk-for-mes20/ta-vsp/ta-libenc/include
-    /tps-sdk-for-mes20/ta-vsp/others/
+    ${TPS_SDK_ROOT}/ta-vsp/ta-opencv/include
+    ${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/include/ta_op
+    ${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/include/ovxlib-package-dev
+    ${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/include/Vivante_ML_Toolkit_OVXLIB_dev
+    ${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/include/
+    ${TPS_SDK_ROOT}/ta-base/ta-cv/include
+    ${TPS_SDK_ROOT}/ta-vsp/ta-opencv/include/opencv4/
+    ${TPS_SDK_ROOT}/ta-vsp/ta-sys/include
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libdec/include
+    ${TPS_SDK_ROOT}/ta-vsp/ta-ffmpeg/include
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libenc/include
+    ${TPS_SDK_ROOT}/ta-base/ta-runtime/include
+    ${TPS_SDK_ROOT}/ta-vsp/others/
 )
 
 
 link_directories(
-	/tps-sdk-for-mes20/ta-vsp/ta-unify-9200O/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-viplite-9200o/lib
-	/tps-sdk-for-mes20/ta-base/ta-runtime/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-opencv/lib
-    /tps-sdk-for-mes20/ta-base/ta-cv/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-libdec/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-sys/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-ffmpeg/lib
-    /tps-sdk-for-mes20/ta-vsp/ta-libenc/lib
+	${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-viplite-9200o/lib
+	${TPS_SDK_ROOT}/ta-base/ta-runtime/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-opencv/lib
+    ${TPS_SDK_ROOT}/ta-base/ta-cv/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libdec/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-sys/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-ffmpeg/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libenc/lib
 )
 
 set(VIPLITE_LIBS VIPhal NBGlinker)
