@@ -15,7 +15,7 @@ set(CMAKE_C_COMPILER riscv64-unknown-linux-gnu-gcc)
 set(CMAKE_ASM_COMPILER riscv64-unknown-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER riscv64-unknown-linux-gnu-g++)
 
-set(TPS_SDK_ROOT "/tps-sdk-for-mes20" CACHE STRING "")
+set(TPS_SDK_ROOT "/tps-future" CACHE STRING "")
 message(STATUS "TPS_SDK_ROOT: ${TPS_SDK_ROOT}")
 
 # 添加头文件搜索路径
