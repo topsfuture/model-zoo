@@ -50,15 +50,18 @@ link_directories(
 )
 
 set(VIPLITE_LIBS VIPhal NBGlinker)
-set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn)
+
+set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn opencv_videoio)
+set(FFMPEG_LIBS avcodec avformat avutil swscale swresample)
+set(OTHER_LIBS tacocv taco_jpegdec taco_ppvdec tacosys enc24 yuv jpeg)
+
 
 set(SRC_yolo11_main	
     src/main.cpp
     src/yolo11.cpp)	
 set(EXE_yolo11_main yolo11s_det_soc)
 add_executable(${EXE_yolo11_main} ${SRC_yolo11_main})
-target_link_libraries(${EXE_yolo11_main} ${OPENCV_LIBS}  ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime 
--ltacocv -ltacosys -ltaco_jpegdec -lenc24 -ltaco_ppvdec -lyuv -ljpeg)
+target_link_libraries(${EXE_yolo11_main} ${OTHER_LIBS} ${OPENCV_LIBS} ${FFMPEG_LIBS}  ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime)
 
 
 

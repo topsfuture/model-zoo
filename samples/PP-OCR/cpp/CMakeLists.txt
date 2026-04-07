@@ -49,7 +49,9 @@ link_directories(
 )
 
 set(VIPLITE_LIBS VIPhal NBGlinker)
-set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn)
+set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn opencv_videoio)
+set(FFMPEG_LIBS avcodec avformat avutil swscale swresample)
+set(OTHER_LIBS tacocv taco_jpegdec taco_ppvdec tacosys enc24 yuv jpeg)
 
 set(SRC_ppocr_main	
     src/main.cpp
@@ -59,8 +61,7 @@ set(SRC_ppocr_main
     src/ppocr_rec.cpp)
 set(EXE_ppocr_main ppocr_system)
 add_executable(${EXE_ppocr_main} ${SRC_ppocr_main})
-target_link_libraries(${EXE_ppocr_main} ${OPENCV_LIBS}  ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime 
--ltacocv -ltacosys -ltaco_jpegdec -lenc24 -ltaco_ppvdec -lyuv -ljpeg)
+target_link_libraries(${EXE_ppocr_main} ${OTHER_LIBS} ${OPENCV_LIBS} ${FFMPEG_LIBS} ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime )
 
 
 

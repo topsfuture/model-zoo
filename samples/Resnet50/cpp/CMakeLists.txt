@@ -53,16 +53,15 @@ link_directories(
 )
 
 set(VIPLITE_LIBS VIPhal NBGlinker)
-set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn)
-
-set(OTHER_LIBS tacocv vx taco_jpegdec taco_ppvdec CLC OpenVX OpenVXU OpenCL SPIRV_viv CLC VSC GAL ovxlib ArchModelSw NNArchPerf  pthread tacosys
-        opencv_imgcodecs opencv_videoio opencv_core opencv_imgproc enc24 yuv jpeg)
+set(OPENCV_LIBS opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn opencv_videoio)
+set(FFMPEG_LIBS avcodec avformat avutil swscale swresample)
+set(OTHER_LIBS tacocv taco_jpegdec taco_ppvdec tacosys enc24 yuv jpeg)
 
 set(SRC_resnet_det
     resnet.cpp
     main.cpp)
 set(EXE_resnet_det resnet50_det_soc)
 add_executable(${EXE_resnet_det} ${SRC_resnet_det})
-target_link_libraries(${EXE_resnet_det} ${OTHER_LIBS}  ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime)
+target_link_libraries(${EXE_resnet_det} ${OTHER_LIBS} ${OPENCV_LIBS} ${FFMPEG_LIBS} ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime)
 
 
