@@ -4,7 +4,7 @@ DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/ztHjiEjZ2tk?domainId=bj2
 
 TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/44M76miFvAB?domainId=bj25486"
 
-MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/Dgfe8Nqdq7w?domainId=bj25486"
+MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/StNnYsviMzV?domainId=bj25486"
 
 
 

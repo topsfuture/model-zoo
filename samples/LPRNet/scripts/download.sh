@@ -3,7 +3,7 @@
 DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/ebJygMV9LUU?domainId=bj25486"
 
 
-MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/PVGijoXwwyb?domainId=bj25486"
+MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/5ppYxiDKD7k?domainId=bj25486"
 
 
 

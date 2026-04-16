@@ -34,6 +34,8 @@ include_directories(
     ${TPS_SDK_ROOT}/ta-vsp/ta-libenc/include
     ${TPS_SDK_ROOT}/ta-base/ta-runtime/include
     ${TPS_SDK_ROOT}/ta-vsp/others/
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libumap/lib
+    ${TPS_SDK_ROOT}/ta-vsp/ta-libdmabufheap/lib
 )
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/tokenizer")
@@ -61,5 +63,77 @@ set(SRC_clip
     main.cpp)
 set(EXE_clip clip_soc)
 add_executable(${EXE_clip} ${SRC_clip})
-target_link_libraries(${EXE_clip} ${OPENCV_LIBS} ${OTHER_LIBS} ${FFMPEG_LIBS} ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime)
+
+
+function(check_and_link_library TARGET_NAME LIB_NAME CHECK_TARGET LIB_PATHS COMPILE_DEFINE)
+    message(STATUS "Checking if ${CHECK_TARGET} needs ${LIB_NAME}")
+    
+    execute_process(
+        COMMAND sh -c "readelf -d ${CHECK_TARGET} | grep ${LIB_NAME}"
+        RESULT_VARIABLE NEEDS_LIB
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    
+    if(NEEDS_LIB EQUAL 0)
+        message(STATUS "${CHECK_TARGET} needs ${LIB_NAME}")
+        string(REPLACE "." "_" LIB_VAR_NAME ${LIB_NAME})
+        set(FIND_LIB_VAR "FOUND_${LIB_VAR_NAME}_LIB")
+        
+        find_library(${FIND_LIB_VAR}
+            NAMES ${LIB_NAME}
+            PATHS ${LIB_PATHS}
+            NO_DEFAULT_PATH
+        )
+
+        if(${FIND_LIB_VAR})
+            message(STATUS "Found ${LIB_NAME}: ${${FIND_LIB_VAR}}")
+            target_link_libraries(${TARGET_NAME} ${${FIND_LIB_VAR}})
+            target_compile_definitions(${TARGET_NAME} PRIVATE "${COMPILE_DEFINE}=1")
+            set(${COMPILE_DEFINE}_FOUND TRUE PARENT_SCOPE)
+        else()
+            message(WARNING "${LIB_NAME} not found in specified paths, but ${CHECK_TARGET} needs it")
+            target_compile_definitions(${TARGET_NAME} PRIVATE "${COMPILE_DEFINE}=0")
+            set(${COMPILE_DEFINE}_FOUND FALSE PARENT_SCOPE)
+        endif()
+    else()
+        message(STATUS "${CHECK_TARGET} does not need ${LIB_NAME}")
+        target_compile_definitions(${TARGET_NAME} PRIVATE "${COMPILE_DEFINE}=0")
+        set(${COMPILE_DEFINE}_FOUND FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+# 设置要检查的目标库
+set(TACO_JPEGDEC_LIB "${TPS_SDK_ROOT}/ta-vsp/ta-libdec/lib/libtaco_jpegdec.so")
+set(TACOCV_LIB "${TPS_SDK_ROOT}/ta-base/ta-cv/lib/libtacocv.so")
+
+# 检查 libumap.so
+check_and_link_library(
+    ${EXE_clip}  
+    "libumap.so"
+    ${TACO_JPEGDEC_LIB}
+    "${TPS_SDK_ROOT}/ta-base/ta-libumap/lib;${TPS_SDK_ROOT}/ta-vsp/ta-libumap/lib"
+    "TPS_HAVE_UMAP"
+)
+
+# 检查 libdmabufheap.so
+check_and_link_library(
+    ${EXE_clip}  
+    "libdmabufheap.so"
+    ${TACOCV_LIB}
+    "${TPS_SDK_ROOT}/ta-vsp/ta-libdmabufheap/lib;${TPS_SDK_ROOT}/ta-base/ta-libdmabufheap/lib"
+    "TPS_HAVE_DMABUFHEAP"
+)
+
+target_link_libraries(${EXE_clip}
+${OTHER_LIBS}
+${OPENCV_LIBS}
+${FFMPEG_LIBS}
+${VIPLITE_LIBS}
+-ldl
+-fprofile-arcs
+-lgcov
+-lpthread
+-lta_runtime
+)
 

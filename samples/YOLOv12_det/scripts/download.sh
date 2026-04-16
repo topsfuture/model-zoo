@@ -2,7 +2,7 @@
 
 DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/ztHjiEjZ2tk?domainId=bj25486"
 
-MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/1M6u6SscMcp?domainId=bj25486"
+MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/kyMFnMDiiDk?domainId=bj25486"
 
 # Color definitions
 RED='\033[0;31m'
