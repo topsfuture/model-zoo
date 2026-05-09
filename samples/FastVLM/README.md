@@ -49,16 +49,22 @@ chmod -R +x scripts
 ```
 下载的模型文件包括：
 ```
-├──wksp/FastVLM-0.5B-Ai16Wpcqi8-1core
+├──/FastVLM-0.5B-Ai16Wpcqi8-2core
 |   ├── analysis.json
 |   ├── engine_strip.json
 |   ├── llava_qwen2_strip.alm
 |   ├── tokenizer_config.json
 |   ├── vocab.json
 |   ├── merges.txt
-├──MaxSeqLen_Cache.txt
-├──time.txt
-├──panda_448x448.jpg
+|   ├── panda_448x448.jpg
+├──/FastVLM-1.5B-Ai16Wpcqi8-2core
+|   ├── analysis.json
+|   ├── engine_strip.json
+|   ├── llava_qwen2_strip.alm
+|   ├── tokenizer_config.json
+|   ├── vocab.json
+|   ├── merges.txt
+|   ├── panda_448x448.jpg
 ```
 
 ### 3.2 自行编译模型

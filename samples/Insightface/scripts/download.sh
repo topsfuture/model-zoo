@@ -1,10 +1,10 @@
 #! /bin/bash
+DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/uTkbciuEieP?domainId=bj25486"
+TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/4NJtYqmWpZG?domainId=bj25486"
+MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/Jqb59RPYTaJ?domainId=bj25486"
 
-TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/3GjiF6haoWv?domainId=bj25486"
 
 
-MODEL_0_5_ai16wpcqi8_2core_URL="https://bj25486.apps.aliyunfile.com/disk/s/NW78ThSfqnG?domainId=bj25486"
-MODEL_1_5_ai16wpcqi8_2core_URL="https://bj25486.apps.aliyunfile.com/disk/s/5fCYo1FPe9G?domainId=bj25486"
 
 # Color definitions
 RED='\033[0;31m'
@@ -350,69 +350,57 @@ download_aliyun_file() {
     fi
 }
 
-# 解压函数：根据文件扩展名自动选择解压方式
-# 参数：$1 - 压缩文件路径
-extract_archive() {
-    local archive="$1"
-    local ext="${archive##*.}"  # 获取文件扩展名（小写）
-    
-    case "${ext,,}" in  # 转为小写比较
-        zip)
-            unzip "$archive" -d "${ROOT_DIR}"
-            ;;
-        rar)
-            # 优先使用 unrar，若没有则尝试 7z
-            if command -v unrar &>/dev/null; then
-                unrar x "$archive" "${ROOT_DIR}/"
-            elif command -v 7z &>/dev/null; then
-                7z x "$archive" -o"${ROOT_DIR}"
-            else
-                log_error "Neither unrar nor 7z found. Cannot extract RAR archive."
-                return 1
-            fi
-            ;;
-        *)
-            log_error "Unsupported archive format: .${ext}"
-            return 1
-            ;;
-    esac
-}
-
-# 下载并解压文件（支持 .zip 和 .rar）
-download_and_extract() {
-    local url="$1"
-    local description="$2"
-    local zip_filename="$3"  # 压缩包文件名，如 "2core-i8.rar"
-    local zip_path="${ROOT_DIR}/${zip_filename}"
-
-    log_info "Starting to download ${description}..."
-    
-    local file_id
-    file_id=$(get_auto_file_id "$url" "$description") || {
-        log_error "Failed to get file ID for ${description}"
-        exit 1
-    }
-    
-    download_aliyun_file "$url" "$file_id" "$zip_path" || {
-        log_error "${description} download failed"
-        exit 1
-    }
-    
-    # 调用解压函数
-    if extract_archive "$zip_path"; then
-        rm "$zip_path" || log_warning "Failed to remove temporary archive ${zip_filename}"
-        log_success "${description} downloaded and extracted successfully."
-    else
-        log_error "Failed to extract ${zip_filename}"
-        exit 1
-    fi
-}
-
 ROOT_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 log_info "root dir: $ROOT_DIR"
 
-# 下载模型文件
-download_and_extract "$MODEL_0_5_ai16wpcqi8_2core_URL" "model_0.5B_ai16wpcqi8_2core" "FastVLM-0.5B-ai16wpcqi8-2core.zip"
-download_and_extract "$MODEL_1_5_ai16wpcqi8_2core_URL" "model_1.5B_ai16wpcqi8_2core" "FastVLM-1.5B-ai16wpcqi8-2core.zip"
+log_info "Starting to download dataset..."
+DATASET_FILE_ID=$(get_auto_file_id "$DATASET_URL" "dataset")
+if [ $? -eq 0 ] && [ -n "$DATASET_FILE_ID" ]; then
+    log_success "Dataset file ID auto got: $DATASET_FILE_ID"
+else
+    log_error "Failed to auto get dataset file ID"
+    exit 1
+fi
+mkdir -p "${ROOT_DIR}/datasets"
+download_aliyun_file "$DATASET_URL" "$DATASET_FILE_ID" "${ROOT_DIR}/datasets.zip" || { 
+    log_error "Dataset download failed"
+    exit 1 
+}
+unzip "${ROOT_DIR}/datasets.zip" -d "${ROOT_DIR}"
+rm "${ROOT_DIR}/datasets.zip"
+
+
+log_info "Starting to download model..."
+MODEL_FILE_ID=$(get_auto_file_id "$MODEL_URL" "model")
+if [ $? -eq 0 ] && [ -n "$MODEL_FILE_ID" ]; then
+    log_success "Model file ID auto got: $MODEL_FILE_ID"
+else
+    log_error "Failed to auto get model file ID"
+    exit 1
+fi
+download_aliyun_file "$MODEL_URL" "$MODEL_FILE_ID" "${ROOT_DIR}/models.zip" || { 
+    log_error "Model download failed"
+    exit 1 
+}
+unzip "${ROOT_DIR}/models.zip" -d "${ROOT_DIR}"
+rm "${ROOT_DIR}/models.zip"
+
+log_info "Starting to download test_image..."
+TEST_IMAGE_FILE_ID=$(get_auto_file_id "$TEST_IMAGE_URL" "test image")
+if [ $? -eq 0 ] && [ -n "$TEST_IMAGE_FILE_ID" ]; then
+    log_success "Test image file ID auto got: $TEST_IMAGE_FILE_ID"
+else
+    log_error "Failed to auto get test image file ID"
+    exit 1
+fi
+download_aliyun_file "$TEST_IMAGE_URL" "$TEST_IMAGE_FILE_ID" "${ROOT_DIR}/test_image.zip" || { 
+    log_error "test_image download failed"
+    exit 1 
+}
+unzip "${ROOT_DIR}/test_image.zip" -d "${ROOT_DIR}"
+rm "${ROOT_DIR}/test_image.zip"
+
+
 
 log_success "All files downloaded successfully!"
+tree -L 2 "${ROOT_DIR}"

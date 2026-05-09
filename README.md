@@ -33,6 +33,7 @@ Model Zoo 提供的例子分别位于 **sample** 和 **application** 两个目�
 | Qwen2_5-VL   | 多模态大模型 |     | Ai16Wpcqi8 | EA6530   |
 | OpenPose   | 姿态估计 |   C++  | FP16/INT8 | EA6530   |
 | Whisper  | 语音识别 |     | INT8 | EA6530 |
+| Insightface  | 人脸识别 |   C++  | FP16/INT8 | EA6530   |
 
 - **application**：存放一些典型场景的典型应用
 
