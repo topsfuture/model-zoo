@@ -18,24 +18,26 @@ Model Zoo 提供的例子分别位于 **sample** 和 **application** 两个目�
 
 | 示例算法 | 算法类别 | 编程语言 | 数据精度    | 支持芯片 |
 | -------- | -------- | -------- | ----------- | -------- |
-| YOLO11_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
-| YOLOv8_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
-| YOLOv5_det   | 目标检测  | C++     | FP16 / INT8 | EA6530   |
-| Resnet50  | 图像分类 | C++      | FP16 / INT8 | EA6530   |
-| MobileNetv2 | 图像分类 | C++    | FP16 / INT8 | EA6530   |
-| LPRNet    | 车牌识别 | C++      | FP16        | EA6530   |
 | CLIP      | 图文匹配 | C++      | FP16        | EA6530   |
 | FastVLM      | 图文匹配 |       | INT8        | EA6530   |
-| PP-OCR    | OCR      | C++      | INT16 / FP16        | EA6530   |
-| YOLOv12_det   | 目标检测  | C++    | FP16  | EA6530   |
+| Insightface  | 人脸识别 |   C++  | FP16 / INT8 | EA6530   |
 | InternVL3.5   | 多模态大语言模型  |   | ai16wpcqi8 | EA6530  |
-| Segformer   | 图像分割 | C++      | FP16        | EA6530   |
+| LPRNet    | 车牌识别 | C++      | FP16        | EA6530   |
+| MobileNetv2 | 图像分类 | C++    | FP16 / INT8 | EA6530   |
+| OpenPose   | 姿态估计 |   C++  | FP16 / INT8 | EA6530   |
+| PP-OCR    | OCR      | C++      | INT16 / FP16        | EA6530   |
 | Qwen2_5-VL   | 多模态大模型 |     | Ai16Wpcqi8 | EA6530   |
-| OpenPose   | 姿态估计 |   C++  | FP16/INT8 | EA6530   |
+| Resnet50  | 图像分类 | C++      | FP16 / INT8 | EA6530   |
+| Segformer   | 图像分割 | C++      | FP16        | EA6530   |
 | Whisper  | 语音识别 |     | INT8 | EA6530 |
-| Insightface  | 人脸识别 |   C++  | FP16/INT8 | EA6530   |
+| YOLOv5_det   | 目标检测  | C++     | FP16 / INT8 | EA6530   |
+| YOLOv8_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
+| YOLOv11_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
+| YOLOv12_det   | 目标检测  | C++    | FP16  | EA6530   |
+| YOLOv26s  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
 
 - **application**：存放一些典型场景的典型应用
+
 
 ## 环境依赖
 
