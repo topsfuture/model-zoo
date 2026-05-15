@@ -28,6 +28,7 @@ Model Zoo 提供的例子分别位于 **sample** 和 **application** 两个目�
 | PP-OCR    | OCR      | C++      | INT16 / FP16        | EA6530   |
 | Qwen2_5-VL   | 多模态大模型 |     | Ai16Wpcqi8 | EA6530   |
 | Resnet50  | 图像分类 | C++      | FP16 / INT8 | EA6530   |
+| RetinaFace  | 人脸检测 | C++      | FP16 / INT8 | EA6530   |
 | Segformer   | 图像分割 | C++      | FP16        | EA6530   |
 | Whisper  | 语音识别 |     | INT8 | EA6530 |
 | YOLOv5_det   | 目标检测  | C++     | FP16 / INT8 | EA6530   |
