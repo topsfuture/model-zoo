@@ -25,6 +25,8 @@
 
 项目代码通过taRuntime加载并执行.nb模型，利用taOpenCV进行图像的预处理和后处理，支持双向检索（图像到文本、文本到图像）。
 
+其中CLIP_cn模型是对CN-CLIPViT-B/16的移植。
+
 ## 2. 特性
 ### 2.1 目录结构说明
 
@@ -41,7 +43,7 @@
 
 ## 2.2 SDK特性
 - 支持EA6530
-- 支持FP16、INT8模型编译和推理
+- 支持 FP16 模型编译和推理
 - 支持图片测试
 - 支持C++推理
 
@@ -61,11 +63,26 @@ models/
 ├── clip_text_config.json
 ├── clip_text_float16.nb
 └── clip_text_vitb32.onnx
+├── clip_cn_image_Ai16Wpcqi8.json
+├── clip_cn_image_Ai16Wpcqi8.nb
+├── clip_cn_image_float16.json
+├── clip_cn_image_float16.nb
+├── clip_cn_image.onnx
+├── clip_cn_text_Ai16Wpcqi8.json
+├── clip_cn_text_Ai16Wpcqi8.nb
+├── clip_cn_text_float16.json
+├── clip_cn_text_float16.nb
+├── clip_cn_text.onnx
+├── dataset.txt
+├── text_cali_inputs.npy 
+├── text_projection_512_512.npy
+└── vocab.txt  # clip_cn tokenizer 词表
 ```
 下载的精度测试数据包括:
 ```
 datasets/
-└── test.bin  # CIFAR_100中10000张图片以及对应的标注信息
+    └── test.bin  # CIFAR_100中10000张图片以及对应的标注信息
+    └── cifar-100  # CIFAR_100_cn
 ```
 下载的测试图片数据包括:
 ```
@@ -75,14 +92,14 @@ test_image/
 └── Clothes-and-hats-misidentified-as-safety-helmet.jpg
 ```
 ### 3.2 模型编译
-本例程需要准备两个模型文件: image_encoder 模型和 text_encoder 模型。
+本例程需要准备 4 个模型文件: 英文及中文的 image_encoder、text_encoder 模型。
 如果您不编译模型，直接使用下载的数据集和模型，可跳过本小节。
 源模型需要编译成nb才能在EA65xx平台上运行，可以使用onnx模型或者torchscripts模型进行编译转换。具体可参考[模型转换](docs/CLIP_Export_Guide.md)。同时，您需要准备用于测试的数据集，如果量化模型，还要准备用于量化的数据集。
 
 
 使用taNNTC工具进行模型编译转换，具体可参考[taNNTC环境搭建](../../docs/环境安装指南.md#1-tanntc环境搭建)。环境搭建好后需在taNNTC环境中进入例程目录，并使用本例程提供的脚本将onnx模型编译成nb。
 
-- 生成FP16 nb
+- 生成英文CLIP FP16 nb
 在taNNTC环境中,我们可以通过convert_model命令进行模型转换的操作，请注意修改config.json中的源模型路径、源模型框架、模型预处理参数和输入大小shape等参数，如：
 
 ```bash
@@ -92,6 +109,28 @@ text_encoder 网络也是同样转换：
 ```bash
 convert_model build --output_dir ../clip/ --config clip_text_config.json
 ```
+
+- 生成中文CLIP FP16 nb
+```bash
+convert_model build --output_dir ../clip/ --config clip_cn_image_float16.json
+```
+text_encoder 转换：
+```bash
+convert_model build --output_dir ../clip/ --config clip_cn_text_float16.json
+```
+
+
+- 生成中文CLIP Ai16Wpcqi8 nb
+进行 Ai16Wpcqi8 转换需要使用 --vsinn 参数：
+```bash
+convert_model build --output_dir ../clip/ --config clip_cn_image_Ai16Wpcqi8.json --vsinn
+```
+text_encoder 转换：
+```bash
+convert_model build --output_dir ../clip/ --config cclip_cn_text_Ai16Wpcqi8.json --vsinn
+```
+
+
 
 
 ## 4. 例程测试
@@ -119,44 +158,70 @@ make
 可执行程序默认有一套参数，请注意根据实际情况进行传参，具体参数说明如下：
 
 ```bash
-Usage: clip_soc [params] 
+# 通用格式
+./clip_soc <模式> [模式选项]
 
-        -?, -h, --help, --usage (value:true)
-                print help message
-        --image_model (value:./models/clip_image_float16.nb)
-                path to the image model file
-        --image_path (value:./dataset)
-                path to the image directory
-        --text (value:"a diagram,a person ,a Car")
-                text inputs for prediction (multiple texts can be separated by spaces and must be quoted)
-        --text_model (value:./models/clip_text_float16.nb)
-                path to the text model file
-        --text_projection_path (value:./text_projection_512_512.npy)
-                path to the text projection file
+
+infer模式选项:
+  模型参数:
+    -l, --language <cn|en>       模型语言: 'cn' 中文, 'en' 英文 (必须)
+    -v, --vocab <path>           词汇表文件路径 (中文模式必须)
+    -im, --image_model <path>    图像编码器模型路径 (必须)
+    -tm, --text_model <path>     文本编码器模型路径 (必须)
+    -tp, --text_projection <path> 文本投影矩阵路径 (英文模式必须)
+  输入参数 (必须提供一组):
+    -i, --image_path <path>      图片目录路径
+    -t, --text <string>          文本输入 (支持逗号分隔的多个文本，如: "猫,狗,鸟")
+
+  ... 其他 infer 专属选项
+
+validate模式选项:
+  模型参数:
+    -l, --language <cn|en>       模型语言: 'cn' 中文, 'en' 英文 (必须)
+    -v, --vocab <path>           词汇表文件路径 (中文模式必须)
+    -im, --image_model <path>    图像编码器模型路径 (必须)
+    -tm, --text_model <path>     文本编码器模型路径 (必须)
+    -tp, --text_projection <path> 文本投影矩阵路径 (英文模式必须)
+
+  数据集参数:
+    -d, --dataset_path <path>    数据集路径 (必须)
+                                 中文模式: 包含test/和label_cn.txt的目录
+                                 英文模式: CIFAR-100二进制文件路径
+    -m, --max_samples <N>        最大测试样本数
+
+    ... 其他 validate 专属选项
+
+
+# 示例1: 中文模型 - 简单验证
+./clip_soc infer \
+           --language cn --vocab ./models/vocab.txt \
+           --image_model ./models/clip_cn_image_float16.nb --text_model ./models/clip_cn_text_float16.nb \
+           --image_path "datasets/test_images"  --text "流程图,人,车"
+
+# 示例2: 英文模型 - 简单验证
+./clip_soc infer \
+           --language en \
+           --image_model ./models/clip_image_float16.nb --text_model ./models/clip_text_float16.nb \
+           --text_projection ./models/text_projection_512_512.npy \
+           --image_path "datasets/test_images" --text "a diagram,a person ,a Car"
+
+
+
+# 示例3: 中文模型 - 数据集精度校验
+./clip_soc validate \
+           --language cn --vocab ./models/vocab.txt \
+           --image_model ./models/clip_cn_image_float16.nb --text_model ./models/clip_cn_text_float16.nb \
+           --dataset_path ./datasets/cifar-100_cn \
+           --max_samples 10000
+
+# 示例4: 英文模型 - 数据集精度校验
+./clip_soc validate \
+           --language en \
+           --image_model ./models/clip_image_float16.nb --text_model ./models/clip_text_float16.nb \
+           --text_projection ./models/text_projection_512_512.npy \
+           --dataset_path ./datasets/cifar-100_en/test.bin \
+           --max_samples 10000
 ```
+infer 测试结束后，会打印图片路径中的每一张图片与输入文本的相似度以及文本与图片的相似度。
+validate 是在 cifar100 数据集上进行 zero-shot 分类精度校验。
 
-
-### 4.3.2 图片测试
-例程测试如下：
-```bash
-./clip_soc --image_model=models/clip_image_float16.nb --image_path=test_image/ --text_model=models/clip_text_float16.nb --text="a diagram,a person,a Car" --text_projection_path=text_projection_512_512.npy
-```
-测试结束后，会打印图片路径中的每一张图片与输入文本的相似度以及文本与图片的相似度
-
-## 4.4 模型精度评估
-
-修改 CMakeLists.txt，编译 cifar100_validator 精度校验程序
-```bash
-set(SRC_clip
-    clip.cpp
-    cifar100_validator.cpp)
-set(EXE_clip cifar100_validator)
-add_executable(${EXE_clip} ${SRC_clip})
-target_link_libraries(${EXE_clip} ${OPENCV_LIBS} ${OTHER_LIBS}  ${VIPLITE_LIBS} -ldl -fprofile-arcs -lgcov -lpthread -lta_runtime)
-```
-
-在 EA65xx 平台上推理 CIFAR-100 数据集，可通过以下测试指令进行:
-```bash
-./cifar100_validator ./models/clip_image_float16.nb ./models/clip_text_float16.nb ./text_projection_512_512.npy ./datasets/test.bin 1000
-```
-该指令会解析test.bin中提供的图片以及真实标签来得到模型精度，其中参数1000指代测试1000张图片，执行成功后会在命令行中打印Top-1和Top-5精度结果,并将具体结果保存在cifar100_fine_validation_results.txt文件中。

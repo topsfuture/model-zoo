@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 
+
 typedef float (*DequantizeFunc)(void* data, size_t idx, int32_t zp, float scale);
 
 #define CORE_0 0
@@ -56,11 +57,13 @@ public:
     TimeStamp()
     {
         start();
-        time_map_lab["tokenlize_time"] = 0.0f;
+        time_map_lab["tokenize_time"] = 0.0f;
+        time_map_lab["imread_time"] = 0.0f;
         time_map_lab["pre_time"] = 0.0f;
         time_map_lab["encode_text_time"] = 0.0f;
         time_map_lab["encode_image_time"] = 0.0f;
-        // time_map_lab["hardware_time"] = 0.0f;
+        time_map_lab["text_postprocess_time"] = 0.0f;
+        time_map_lab["image_postprocess_time"] = 0.0f;
     }
 
     void start()
@@ -112,9 +115,10 @@ class CLIP{
 public:
 
     int init(const std::string& image_model, const std::string& text_model,
-                const std::string text_projection_path,
                 const std::shared_ptr<ta_runtime_context>& nnrt_context_text,
-                const std::shared_ptr<ta_runtime_context>& nnrt_context_images
+                const std::shared_ptr<ta_runtime_context>& nnrt_context_images,
+                const std::string& text_projection_path = "",
+                bool is_chinese = false
                 );
     void deinit(std::shared_ptr<ta_runtime_context> nnrt_context_images,
               std::shared_ptr<ta_runtime_context> nnrt_context_text); 
@@ -129,7 +133,7 @@ public:
     void quantize(float* src, void* dst, size_t num_elements, 
                                    const taconn_inout_attr_t& attr);
     int infer(const std::vector<std::string>& image_paths, const std::vector<std::vector<int>> tokenlized_text,
-           const std::vector<std::string>& text_inputs, CLIP& model,
+           const std::vector<std::string>& text_inputs,
            const std::shared_ptr<ta_runtime_context>& nnrt_context_text,
            const std::shared_ptr<ta_runtime_context>& nnrt_context_images);
 
@@ -137,12 +141,14 @@ public:
     std::vector<float> encode_image_memory(const cv::Mat& image, 
                                       const std::shared_ptr<ta_runtime_context>& nnrt_context_images);
     std::string model_name;
-    int top_k;
+    int top_k = 5;
 
     TimeStamp *ts_ = NULL;
 
 
 private:
+    bool is_chinese_;
+
     std::vector<float> preprocess_cpu_letterbox(const cv::Mat& image);
     cv::Mat mobile_clip_preprocess(const cv::Mat& image);
     
@@ -174,7 +180,7 @@ private:
         std::vector<taconn_inout_attr_t> ins_attr;
         std::vector<taconn_inout_attr_t> outs_attr;
         int batch_size = 1;
-        int token_len = 77;
+        int token_len = 52;
         
         std::string model_name;
     } text_model_info;
@@ -182,6 +188,8 @@ private:
     // 使用 OpenCV Mat 
     cv::Mat text_projection;
     size_t embed_dim = 512; 
+    size_t hidden_dim = 512;
+
 
 
 };

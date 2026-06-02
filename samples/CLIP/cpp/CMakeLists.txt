@@ -38,7 +38,13 @@ include_directories(
     ${TPS_SDK_ROOT}/ta-vsp/ta-libdmabufheap/lib
 )
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/tokenizer")
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/tokenizer"
+                    ${PROJECT_ROOT}/third_party/utf8proc
+)
+
+add_subdirectory(${PROJECT_ROOT}/third_party/utf8proc)
+
 
 link_directories(
 	${TPS_SDK_ROOT}/ta-vsp/ta-unify-9200O/lib
@@ -60,6 +66,7 @@ set(OTHER_LIBS tacocv taco_jpegdec taco_ppvdec tacosys enc24 yuv jpeg)
 
 set(SRC_clip
     clip.cpp
+    cifar100_validator.cpp
     main.cpp)
 set(EXE_clip clip_soc)
 add_executable(${EXE_clip} ${SRC_clip})
@@ -126,6 +133,7 @@ check_and_link_library(
 )
 
 target_link_libraries(${EXE_clip}
+utf8proc
 ${OTHER_LIBS}
 ${OPENCV_LIBS}
 ${FFMPEG_LIBS}
@@ -137,3 +145,46 @@ ${VIPLITE_LIBS}
 -lta_runtime
 )
 
+
+
+# # 中文CIFAR-100验证器
+# set(SRC_clip_cn_validator
+#     clip.cpp
+#     cifar100_cn_validator.cpp)
+# set(EXE_clip_cn_validator cifar100_cn_validator)
+# add_executable(${EXE_clip_cn_validator} ${SRC_clip_cn_validator})
+
+# # 包含目录
+# target_include_directories(${EXE_clip_cn_validator} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# # 检查 libumap.so
+# check_and_link_library(
+#     ${EXE_clip_cn_validator}  
+#     "libumap.so"
+#     ${TACO_JPEGDEC_LIB}
+#     "${TPS_SDK_ROOT}/ta-base/ta-libumap/lib;${TPS_SDK_ROOT}/ta-vsp/ta-libumap/lib"
+#     "TPS_HAVE_UMAP"
+# )
+
+# # 检查 libdmabufheap.so
+# check_and_link_library(
+#     ${EXE_clip_cn_validator}  
+#     "libdmabufheap.so"
+#     ${TACOCV_LIB}
+#     "${TPS_SDK_ROOT}/ta-vsp/ta-libdmabufheap/lib;${TPS_SDK_ROOT}/ta-base/ta-libdmabufheap/lib"
+#     "TPS_HAVE_DMABUFHEAP"
+# )
+
+# # 链接库
+# target_link_libraries(${EXE_clip_cn_validator} 
+#     ${OPENCV_LIBS} 
+#     ${OTHER_LIBS}  
+#     ${FFMPEG_LIBS}
+#     ${VIPLITE_LIBS} 
+#     -ldl 
+#     -fprofile-arcs 
+#     -lgcov 
+#     -lpthread 
+#     -lta_runtime
+#     utf8proc
+#     )

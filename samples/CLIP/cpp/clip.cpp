@@ -163,8 +163,8 @@ size_t get_element_num(const taconn_inout_attr_t input_attr) {
 
 int ta_init_model(const std::shared_ptr<ta_runtime_context>& nnrt_context_image,
                     const std::string& image_model,
-                    std::vector<taconn_input_t>& input_tensors,      // 改为 vector 引用
-                    std::vector<taconn_buffer_t>& output_buffers,    // 改为 vector 引用
+                    std::vector<taconn_input_t>& input_tensors,     
+                    std::vector<taconn_buffer_t>& output_buffers,   
                     std::vector<taconn_inout_attr_t>& ins_attr,
                     std::vector<taconn_inout_attr_t>& outs_attr,
                     int& input_num,
@@ -410,9 +410,13 @@ void CLIP::quantize(float* src, void* dst, size_t num_elements,
 /*  CLIP */
 
 int CLIP::init(const std::string& image_model, const std::string& text_model,
-                const std::string text_projection_path,
                 const std::shared_ptr<ta_runtime_context>& nnrt_context_text,
-                const std::shared_ptr<ta_runtime_context>& nnrt_context_images){
+                const std::shared_ptr<ta_runtime_context>& nnrt_context_images,
+                const std::string& text_projection_path,
+                bool is_chinese){
+
+    is_chinese_ = is_chinese;
+
     // 1. init taruntime 
     // model_context = ModelContext();
     int status = ta_runtime_init();
@@ -421,7 +425,7 @@ int CLIP::init(const std::string& image_model, const std::string& text_model,
         return status;
     }
 
-    ta_init_model(nnrt_context_images,
+    status = ta_init_model(nnrt_context_images,
                     image_model,
                     image_model_info.input_tensors,
                     image_model_info.output_buffers,
@@ -432,28 +436,12 @@ int CLIP::init(const std::string& image_model, const std::string& text_model,
                     image_model_info.model_input_h,
                     image_model_info.model_input_w,
                     CORE_0);
-
-    // load text_projection
-    std::ifstream file(text_projection_path, std::ios::binary);
-    char header[128];
-    file.read(header, 128);
-    size_t header_length = 0;
-    while (header[header_length] != '\n') header_length++;
-    file.seekg(header_length + 1, std::ios::beg);
-    const size_t rows = 512, cols = 512;
-    // 使用 OpenCV Mat 存储投影矩阵
-    text_projection = cv::Mat(rows, cols, CV_32FC1);
-
-    std::vector<float> flat_data(rows * cols);
-    file.read(reinterpret_cast<char*>(flat_data.data()), flat_data.size() * sizeof(float));
-    for (size_t i = 0; i < rows; ++i) {
-        for (size_t j = 0; j < cols; ++j) {
-            text_projection.at<float>(i, j) = flat_data[i * cols + j];
-        }
+    if (status != 0) {
+        std::cerr << "Failed to initialize image model: " << status << std::endl;
+        return status;
     }
 
-
-    ta_init_model(nnrt_context_text,
+    status = ta_init_model(nnrt_context_text,
                     text_model,
                     text_model_info.input_tensors,
                     text_model_info.output_buffers,
@@ -464,7 +452,42 @@ int CLIP::init(const std::string& image_model, const std::string& text_model,
                     text_model_info.batch_size,
                     text_model_info.token_len,
                     CORE_1);
-    return 0;
+    if (status != 0) {
+        std::cerr << "Failed to initialize text model: " << status << std::endl;
+        return status;
+    }
+
+    if (!is_chinese_ && !text_projection_path.empty()) {
+        // 英文模型：从文件加载 text_projection 矩阵
+        std::ifstream file(text_projection_path, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open text projection file: " << text_projection_path << std::endl;
+        } else {
+            char header[128];
+            file.read(header, 128);
+            size_t header_length = 0;
+            while (header[header_length] != '\n') header_length++;
+            file.seekg(header_length + 1, std::ios::beg);
+            
+            const size_t rows = 512, cols = 512;   // hidden 维度512 
+            text_projection = cv::Mat(rows, cols, CV_32FC1);
+            std::vector<float> flat_data(rows * cols);
+            file.read(reinterpret_cast<char*>(flat_data.data()), flat_data.size() * sizeof(float));
+            for (size_t i = 0; i < rows; ++i) {
+                for (size_t j = 0; j < cols; ++j) {
+                    text_projection.at<float>(i, j) = flat_data[i * cols + j];
+                }
+            }
+            file.close();
+            // std::cout << "Loaded text projection matrix for English model." << std::endl;
+        }
+    } else {
+        // 中文模型：不加载投影矩阵，将 cv::Mat 置空
+        text_projection = cv::Mat();
+        // std::cout << "Running in Chinese mode, text projection is disabled." << std::endl;
+    }
+
+    return status;
 }
 void CLIP::deinit(std::shared_ptr<ta_runtime_context> nnrt_context_images,
                   std::shared_ptr<ta_runtime_context> nnrt_context_text) {
@@ -652,7 +675,7 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
     taconn_input_t& input_tensor = text_model_info.input_tensors[0];
     
     // 3. 验证输入形状
-    if (input_attr.dim_count != 2 || input_attr.dim_size[0] != 77) {
+    if (input_attr.dim_count != 2 || input_attr.dim_size[0] != 52) {
         std::cerr << "Unexpected text model input shape: [";
         for (unsigned int i = 0; i < input_attr.dim_count; ++i) {
             std::cerr << input_attr.dim_size[i];
@@ -661,9 +684,10 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
         std::cerr << "]" << std::endl;
         // return std::vector<float>();
     }
-    size_t max_token_len = input_attr.dim_size[0]; // 应该是77
+    size_t max_token_len = input_attr.dim_size[0]; // 应该是52
     // std::cout << "max_token_len :" << max_token_len << std::endl;
     // 4. 处理文本输入：填充或截断到固定长度
+    if (ts_) ts_->start();
     std::vector<int> processed_text = text;
     if (processed_text.size() > max_token_len) {
         // 截断到最大长度
@@ -677,18 +701,19 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
     taconn_data_format_t data_type = static_cast<taconn_data_format_t>(input_attr.data_format);
     size_t required_size = calculate_buffer_size(data_type, get_element_num(input_attr));
 
-
     std::memcpy(input_tensor.data, processed_text.data(), required_size);
+    if (ts_) ts_->time_accumulation("tokenize_time");
 
 
     // 7. 运行文本模型推理
-    ts_->start();
+    if (ts_) ts_->start();
 
     int status = ta_runtime_run_network(nnrt_context_text.get());
     if (status != 0) {
         std::cerr << "Text model inference failed: " << status << std::endl;
         return std::vector<float>();
     }
+    if (ts_) ts_->time_accumulation("encode_text_time");
     
     // 8. 使输出buffer失效
     if (text_model_info.output_buffers.empty()) {
@@ -702,7 +727,6 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
         std::cerr << "Invalidate output buffer failed: " << status << std::endl;
         return std::vector<float>();
     }
-    ts_->time_accumulation("encode_text_time");
 
 
     // 9. 获取并反量化输出数据
@@ -729,50 +753,51 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
     for (size_t i = 0; i < num_elements; ++i) {
         output_data[i] = dequant(output_buffer.data, i, zp, scale);
     }
-    
-    // 10. 提取最后一个有效token的特征
-    // 找到最后一个非零token（CLIP使用EOS token后的特征）
-    int last_valid_index = processed_text.size() - 1;
-    for (; last_valid_index >= 0; --last_valid_index) {
-        if (processed_text[last_valid_index] != 0) {
-            break;
-        }
-    }
-    
-    if (last_valid_index < 0) {
-        last_valid_index = processed_text.size() - 1; // 如果全部是0，使用最后一个
-    }
-    
-    
-    size_t hidden_dim = output_attr.dim_size[0];
-    
-    int feature_start_index = last_valid_index * hidden_dim;
-    if (feature_start_index + hidden_dim > output_data.size()) {
-        std::cerr << "Invalid feature extraction index: " << feature_start_index 
-                  << " + " << hidden_dim << " > " << output_data.size() << std::endl;
-        return std::vector<float>();
-    }
-    
-    std::vector<float> extracted_row(output_data.begin() + feature_start_index, 
-                                       output_data.begin() + feature_start_index + hidden_dim);
-    // size_t seq_len = max_token_len;
 
-    // 2. 提取最后一个有效token的特征
-    auto maxIt = std::max_element(text.begin(), text.end());
-    int max_index = std::distance(text.begin(), maxIt);
-    
+    std::vector<float> extracted_row;
+    if (is_chinese_) {
+        extracted_row.assign(output_data.begin(), output_data.begin() + hidden_dim);
+    } else {
+        // 找到最后一个非零token（CLIP使用EOS token后的特征）
+        int last_valid_index = processed_text.size() - 1;
+        for (; last_valid_index >= 0; --last_valid_index) {
+            if (processed_text[last_valid_index] != 0) {
+                break;
+            }
+        }
+        
+        if (last_valid_index < 0) {
+            last_valid_index = processed_text.size() - 1; // 如果全部是0，使用最后一个
+        }
+        
+        
+        size_t hidden_dim = output_attr.dim_size[0];
+        
+        int feature_start_index = last_valid_index * hidden_dim;
+        if (feature_start_index + hidden_dim > output_data.size()) {
+            std::cerr << "Invalid feature extraction index: " << feature_start_index 
+                    << " + " << hidden_dim << " > " << output_data.size() << std::endl;
+            return std::vector<float>();
+        }
+        
+        extracted_row.assign(output_data.begin() + feature_start_index, 
+                                        output_data.begin() + feature_start_index + hidden_dim);
+    }
+
     // 3. 矩阵投影
     std::vector<float> result(embed_dim, 0.0f);
-    if (!text_projection.empty()) {
+    if (text_projection.empty()) {
+        // 如果没有投影矩阵，直接使用原始特征
+        result = std::vector<float>(extracted_row.begin(), extracted_row.begin() + embed_dim);
+
+    } else {
         // 将提取的行转换为 OpenCV Mat (1×512 行向量)
         cv::Mat extracted_row_mat(1, hidden_dim, CV_32FC1, extracted_row.data());
         // 执行矩阵乘法: [1×512] × [512×512] = [1×512]
         cv::Mat result_mat = extracted_row_mat * text_projection;
         // 将结果复制回 vector
         std::memcpy(result.data(), result_mat.ptr<float>(0), embed_dim * sizeof(float));
-    } else {
-        // 如果没有投影矩阵，直接使用原始特征
-        result = std::vector<float>(extracted_row.begin(), extracted_row.begin() + embed_dim);
+
     }
 
     normalize(result);
@@ -781,30 +806,32 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
 
 std::vector<float> CLIP::encode_image(const std::string image_path , const std::shared_ptr<ta_runtime_context>& nnrt_context_images){
     // 1. 读取图像
+    if (ts_) ts_->start();
     cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR | cv::IMREAD_RETRY_SOFTDEC);
     if (image.empty()) {
         std::cerr << "Error reading image: " << image_path << std::endl;
         return std::vector<float>();
     }
-    
+    if (ts_) ts_->time_accumulation("imread_time");
     std::cout << "Filename: " << image_path << std::endl;
     
     // 2. 预处理图像
-    ts_->start();
+    if (ts_) ts_->start();
     preprocess(image);
-    ts_->time_accumulation("pre_time");
+    if (ts_) ts_->time_accumulation("pre_time");
     
     // 3. 运行图像模型推理
-    ts_->start();
+    if (ts_) ts_->start();
     int status = ta_runtime_run_network(nnrt_context_images.get());
     if (status != 0) {
         std::cerr << "Run network failed." << std::endl;
         return std::vector<float>();
     }
+    if (ts_) ts_->time_accumulation("encode_image_time");
+
     
     // 4. 使输出buffer失效
     status = ta_runtime_invalidate_buffer(nnrt_context_images.get(), &image_model_info.output_buffers[0]);
-    ts_->time_accumulation("encode_image_time");
 
     if (status != 0) {
         std::cerr << "Invalidate output buffer failed." << std::endl;
@@ -873,20 +900,20 @@ std::vector<float> CLIP::calculate_similarity(const std::vector<float>& image_fe
 
 
 int CLIP::infer(const std::vector<std::string>& image_paths, const std::vector<std::vector<int>> tokenlized_text,
-           const std::vector<std::string>& text_inputs, CLIP& model,
+           const std::vector<std::string>& text_inputs,
            const std::shared_ptr<ta_runtime_context>& nnrt_context_text,
            const std::shared_ptr<ta_runtime_context>& nnrt_context_images){
     /* Bidirectional retrieval */
     // calculate text features
     std::vector<std::vector<float>> text_features;
     for (const auto& text : tokenlized_text){
-        std::vector<float> text_feature = model.encode_text(text, nnrt_context_text);
+        std::vector<float> text_feature = encode_text(text, nnrt_context_text);
         text_features.push_back(text_feature);
     }
     // calculate image features
     std::vector<std::vector<float>> image_features;
     for (const auto& filename : image_paths){
-        std::vector<float> image_feature = model.encode_image(filename, nnrt_context_images);
+        std::vector<float> image_feature = encode_image(filename, nnrt_context_images);
         image_features.push_back(image_feature);
     }
 
@@ -900,9 +927,9 @@ int CLIP::infer(const std::vector<std::string>& image_paths, const std::vector<s
             std::cout << "Image: " << image_paths[i] << std::endl;
             std::vector<float> similarity(text_inputs.size());
             // calculate similarity per image
-            similarity = model.calculate_similarity(image_feature, text_features);
-            int output_size = std::min(text_inputs.size(), static_cast<size_t>(model.top_k));
-            auto [values, indices] = model.topk(similarity, output_size);
+            similarity = calculate_similarity(image_feature, text_features);
+            int output_size = std::min(text_inputs.size(), static_cast<size_t>(top_k));
+            auto [values, indices] = topk(similarity, output_size);
             for (size_t i = 0; i < output_size; ++i) {
                 std::cout << "Similarity: " << values[i] << ", Text: " << text_inputs[indices[i]] << std::endl;
             }
@@ -917,9 +944,9 @@ int CLIP::infer(const std::vector<std::string>& image_paths, const std::vector<s
             std::cout << "Text: " << text_inputs[i] << std::endl;
             std::vector<float> similarity(image_features.size());
             // calculate similarity per text
-            similarity = model.calculate_similarity(text_feature, image_features);
-            int output_size = std::min(image_features.size(), static_cast<size_t>(model.top_k));
-            auto [values, indices] = model.topk(similarity, output_size);
+            similarity = calculate_similarity(text_feature, image_features);
+            int output_size = std::min(image_features.size(), static_cast<size_t>(top_k));
+            auto [values, indices] = topk(similarity, output_size);
             for (size_t i = 0; i < output_size; ++i) {
                 std::cout << "Similarity: " << values[i] << ", Image: " << image_paths[indices[i]] << std::endl;
             }
@@ -937,7 +964,7 @@ int CLIP::infer(const std::vector<std::string>& image_paths, const std::vector<s
 
 
 
-// 需要为CLIP类添加这个方法来支持内存中的图像处理
+// 需要为CLIP类添加这个方法来支持内存中的图像处理for cifar100
 std::vector<float> CLIP::encode_image_memory(const cv::Mat& image, 
                                         const std::shared_ptr<ta_runtime_context>& nnrt_context_images) {
     if (image.empty()) {
@@ -945,20 +972,22 @@ std::vector<float> CLIP::encode_image_memory(const cv::Mat& image,
         return std::vector<float>();
     }
     // 预处理图像
+    if (ts_) ts_->start();
     preprocess(image);
-
+    if (ts_) ts_->time_accumulation("pre_time");
     // 运行图像模型推理
-    ts_->start();
+    if (ts_) ts_->start();
     int status = ta_runtime_run_network(nnrt_context_images.get());
     if (status != 0) {
         std::cerr << "Run network failed." << std::endl;
         return std::vector<float>();
     }
+    if (ts_) ts_->time_accumulation("encode_image_time");
+
     
     // 使输出buffer失效
     status = ta_runtime_invalidate_buffer(nnrt_context_images.get(), 
                                             &image_model_info.output_buffers[0]);
-    ts_->time_accumulation("encode_image_time");
     
     if (status != 0) {
         std::cerr << "Invalidate output buffer failed." << std::endl;

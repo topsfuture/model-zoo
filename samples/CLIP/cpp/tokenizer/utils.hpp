@@ -25,44 +25,44 @@
 #include <vector>
 #include "vocab.hpp"
 
-std::string load_merges() {
+inline std::string load_merges() {
     std::string merges_utf8_str(reinterpret_cast<const char*>(merges_utf8_c_str),
                                 sizeof(merges_utf8_c_str));
     return merges_utf8_str;
 }
 
-std::u32string unicode_value_to_utf32(int unicode_value) {
+inline std::u32string unicode_value_to_utf32(int unicode_value) {
     std::u32string utf32_string = {static_cast<char32_t>(unicode_value)};
     return utf32_string;
 }
 
-std::string ltrim(const std::string& s) {
+inline std::string ltrim(const std::string& s) {
     auto it = std::find_if(s.begin(), s.end(),
                            [](int ch) { return !std::isspace(ch); });
     return std::string(it, s.end());
 }
 
-std::string rtrim(const std::string& s) {
+inline std::string rtrim(const std::string& s) {
     auto it = std::find_if(s.rbegin(), s.rend(),
                            [](int ch) { return !std::isspace(ch); });
     return std::string(s.begin(), it.base());
 }
 
-std::string trim(const std::string& s) {
+inline std::string trim(const std::string& s) {
     return rtrim(ltrim(s));
 }
 
-std::u32string utf8_to_utf32(const std::string& utf8_str) {
+inline std::u32string utf8_to_utf32(const std::string& utf8_str) {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
     return converter.from_bytes(utf8_str);
 }
 
-std::string utf32_to_utf8(const std::u32string& utf32_str) {
+inline std::string utf32_to_utf8(const std::u32string& utf32_str) {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
     return converter.to_bytes(utf32_str);
 }
 
-std::vector<std::pair<int, std::u32string>> bytes_to_unicode() {
+inline std::vector<std::pair<int, std::u32string>> bytes_to_unicode() {
     std::vector<std::pair<int, std::u32string>> byte_unicode_pairs;
     std::set<int> byte_set;
     for (int b = static_cast<int>('!'); b <= static_cast<int>('~'); ++b) {
@@ -91,7 +91,7 @@ std::vector<std::pair<int, std::u32string>> bytes_to_unicode() {
     return byte_unicode_pairs;
 }
 
-static bool ends_with(const std::string& str, const std::string& suffix) {
+inline static bool ends_with(const std::string& str, const std::string& suffix) {
     return str.size() >= suffix.size() &&
            0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
 }

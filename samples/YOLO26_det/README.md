@@ -57,7 +57,7 @@ chmod -R +x scripts
 下载的模型包括：
 ```
 models/
-├── datasets.txt
+├── dataset.txt
 ├── yolo26s_float16.nb
 ├── yolo26s.onnx
 ├── yolo26s_int8.nb
@@ -144,7 +144,6 @@ pip install pycocotools
 python3 coco_eval.py -g 用户路径/instances_val2017_1000.json -r 用户路径/yolo26s_fp16.json
 ```
 执行成功后，会打印精度测试结果。
-
 
 
 

@@ -1,7 +1,13 @@
-#! /bin/bash
-DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/v95Vpme6Zy3?domainId=bj25486"
-TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/5E4Aq4CpM8H?domainId=bj25486"
-MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/sp3DVTf9hg4?domainId=bj25486"
+EN_DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/v95Vpme6Zy3?domainId=bj25486"
+EN_TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/5E4Aq4CpM8H?domainId=bj25486"
+EN_MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/UmGKAAPvazm?domainId=bj25486"
+
+CN_DATASET_URL="https://bj25486.apps.aliyunfile.com/disk/s/EEK4273YNqX?domainId=bj25486"
+CN_TEST_IMAGE_URL="https://bj25486.apps.aliyunfile.com/disk/s/wCUC1aJSgeS?domainId=bj25486"
+CN_MODEL_URL="https://bj25486.apps.aliyunfile.com/disk/s/mw7mEBh5Tj9?domainId=bj25486"
+
+
+
 
 
 
@@ -350,11 +356,13 @@ download_aliyun_file() {
     fi
 }
 
+
+
 ROOT_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 log_info "root dir: $ROOT_DIR"
 
 log_info "Starting to download dataset..."
-DATASET_FILE_ID=$(get_auto_file_id "$DATASET_URL" "dataset")
+DATASET_FILE_ID=$(get_auto_file_id "$CN_DATASET_URL" "dataset")
 if [ $? -eq 0 ] && [ -n "$DATASET_FILE_ID" ]; then
     log_success "Dataset file ID auto got: $DATASET_FILE_ID"
 else
@@ -362,41 +370,76 @@ else
     exit 1
 fi
 mkdir -p "${ROOT_DIR}/datasets"
-download_aliyun_file "$DATASET_URL" "$DATASET_FILE_ID" "${ROOT_DIR}/datasets/test.bin" || { 
+download_aliyun_file "$CN_DATASET_URL" "$DATASET_FILE_ID" "${ROOT_DIR}/datasets.zip" || { 
+    log_error "Dataset download failed"
+    exit 1 
+}
+unzip "${ROOT_DIR}/datasets.zip" -d "${ROOT_DIR}"
+rm "${ROOT_DIR}/datasets.zip"
+
+DATASET_FILE_ID=$(get_auto_file_id "$EN_DATASET_URL" "dataset")
+if [ $? -eq 0 ] && [ -n "$DATASET_FILE_ID" ]; then
+    log_success "Dataset file ID auto got: $DATASET_FILE_ID"
+else
+    log_error "Failed to auto get dataset file ID"
+    exit 1
+fi
+mkdir -p "${ROOT_DIR}/datasets"
+download_aliyun_file "$EN_DATASET_URL" "$DATASET_FILE_ID" "${ROOT_DIR}/datasets/test.bin" || { 
     log_error "Dataset download failed"
     exit 1 
 }
 
+
+
+
 log_info "Starting to download model..."
-MODEL_FILE_ID=$(get_auto_file_id "$MODEL_URL" "model")
+MODEL_FILE_ID=$(get_auto_file_id "$CN_MODEL_URL" "model")
 if [ $? -eq 0 ] && [ -n "$MODEL_FILE_ID" ]; then
     log_success "Model file ID auto got: $MODEL_FILE_ID"
 else
     log_error "Failed to auto get model file ID"
     exit 1
 fi
-download_aliyun_file "$MODEL_URL" "$MODEL_FILE_ID" "${ROOT_DIR}/models.zip" || { 
+download_aliyun_file "$CN_MODEL_URL" "$MODEL_FILE_ID" "${ROOT_DIR}/models.zip" || { 
     log_error "Model download failed"
     exit 1 
 }
 unzip "${ROOT_DIR}/models.zip" -d "${ROOT_DIR}"
 rm "${ROOT_DIR}/models.zip"
 
+MODEL_FILE_ID=$(get_auto_file_id "$EN_MODEL_URL" "model")
+if [ $? -eq 0 ] && [ -n "$MODEL_FILE_ID" ]; then
+    log_success "Model file ID auto got: $MODEL_FILE_ID"
+else
+    log_error "Failed to auto get model file ID"
+    exit 1
+fi
+download_aliyun_file "$EN_MODEL_URL" "$MODEL_FILE_ID" "${ROOT_DIR}/models.zip" || { 
+    log_error "Model download failed"
+    exit 1 
+}
+unzip "${ROOT_DIR}/models.zip" -d "${ROOT_DIR}"
+rm "${ROOT_DIR}/models.zip"
+
+
+
+
+
 log_info "Starting to download test_image..."
-TEST_IMAGE_FILE_ID=$(get_auto_file_id "$TEST_IMAGE_URL" "test image")
+TEST_IMAGE_FILE_ID=$(get_auto_file_id "$CN_TEST_IMAGE_URL" "test image")
 if [ $? -eq 0 ] && [ -n "$TEST_IMAGE_FILE_ID" ]; then
     log_success "Test image file ID auto got: $TEST_IMAGE_FILE_ID"
 else
     log_error "Failed to auto get test image file ID"
     exit 1
 fi
-download_aliyun_file "$TEST_IMAGE_URL" "$TEST_IMAGE_FILE_ID" "${ROOT_DIR}/test_image.zip" || { 
+download_aliyun_file "$CN_TEST_IMAGE_URL" "$TEST_IMAGE_FILE_ID" "${ROOT_DIR}/test_image.zip" || { 
     log_error "test_image download failed"
     exit 1 
 }
 unzip "${ROOT_DIR}/test_image.zip" -d "${ROOT_DIR}"
 rm "${ROOT_DIR}/test_image.zip"
-
 
 
 log_success "All files downloaded successfully!"
