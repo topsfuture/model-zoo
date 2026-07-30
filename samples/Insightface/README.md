@@ -145,8 +145,8 @@ Options:
   --rec-model NAME   Recognition model base name (default: models/w600k_mbf_float16.nb)
   --image PATH      Input image path (for single image mode)
   --eval            Enable LFW evaluation mode
-  --lfw-data DIR    LFW dataset directory (default: ./dataset/LFW)
-  --lfw-pairs FILE  LFW pairs.txt file (default: ./dataset/lfw_pairs.txt)
+  --lfw-data DIR    LFW dataset directory (default: ./datasets/LFW)
+  --lfw-pairs FILE  LFW pairs.txt file (default: ./datasets/lfw_pairs.txt)
   --core-id ID      NPU core ID (0 or 1)
   --score-thresh F  Score threshold (default: 0.5)
   --nms-thresh F    NMS threshold (default: 0.4)
@@ -162,7 +162,7 @@ Options:
 ```bash
 chmod +x insightface_soc
 
-./insightface_soc --det-model models/det_500m_float16.nb --rec-model models/w600k_mbf_float16.nb --image ./dataset/test_images/test_image.jpg 
+./insightface_soc --det-model models/det_500m_float16.nb --rec-model models/w600k_mbf_float16.nb --image ./datasets/test_images/test_image.jpg 
 ```
 LFW 数据集精度评估执行命令：
 

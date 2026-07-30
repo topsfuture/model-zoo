@@ -203,8 +203,8 @@ int main(int argc, char* argv[]) {
     // 默认参数
     std::string model_dir = "models";
     std::string image_path = "";
-    std::string lfw_data_dir = "./dataset/LFW";
-    std::string lfw_pairs_file = "./dataset/lfw_pairs.txt";
+    std::string lfw_data_dir = "./datasets/LFW";
+    std::string lfw_pairs_file = "./datasets/lfw_pairs.txt";
     int core_id = 0;
     float score_thresh = 0.5f;
     float nms_thresh = 0.4f;
@@ -248,8 +248,8 @@ int main(int argc, char* argv[]) {
             std::cout << "  --rec-model NAME   Recognition model base name (default: models/w600k_mbf_float16.nb)" << std::endl;
             std::cout << "  --image PATH      Input image path (for single image mode)" << std::endl;
             std::cout << "  --eval            Enable LFW evaluation mode" << std::endl;
-            std::cout << "  --lfw-data DIR    LFW dataset directory (default: ./dataset/LFW)" << std::endl;
-            std::cout << "  --lfw-pairs FILE  LFW pairs.txt file (default: ./dataset/lfw_pairs.txt)" << std::endl;
+            std::cout << "  --lfw-data DIR    LFW dataset directory (default: ./datasets/LFW)" << std::endl;
+            std::cout << "  --lfw-pairs FILE  LFW pairs.txt file (default: ./datasets/lfw_pairs.txt)" << std::endl;
             std::cout << "  --core-id ID      NPU core ID (0 or 1)" << std::endl;
             std::cout << "  --score-thresh F  Score threshold (default: 0.5)" << std::endl;
             std::cout << "  --nms-thresh F    NMS threshold (default: 0.4)" << std::endl;
