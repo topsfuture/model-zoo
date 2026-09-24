@@ -1,0 +1,34 @@
+{
+  "import": {
+    "name": "pwc_net",
+    "framework": "ONNX",
+    "onnx_model": "./models/pwc_net_384x256.onnx",
+    "inputs": "frames",
+    "outputs": "flow",
+    "input-size-list": "1,6,256,384"
+  },
+  "preprocess": [
+    {
+      "reverse_channel": false,
+      "mean": [0.0, 0.0, 0.0],
+      "std": [1.0, 1.0, 1.0],
+      "scale": 1.0,
+      "add_preprocess_node": false
+    }
+  ],
+  "postprocess": [
+    {
+      "add_postprocess_node": false,
+      "float32_out": true
+    }
+  ],
+  "quantize": {
+    "qtype": "float16",
+    "dataset_file_type": "NPY",
+    "dataset_file": "./calibration.npy",
+    "input_num": 1
+  },
+  "export": {
+    "core_number": 1
+  }
+}

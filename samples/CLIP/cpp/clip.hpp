@@ -32,16 +32,6 @@ typedef float (*DequantizeFunc)(void* data, size_t idx, int32_t zp, float scale)
 #define CORE_1 1
 
 
-enum DataType {
-    kFloat32,   // 32位浮点数 (float)
-    kFloat16,   // 16位浮点数 (__fp16/half)
-    kUInt8,     // 无符号8位整型 (uint8_t)
-    kInt8,      // 有符号8位整型 (int8_t)
-    kInt16,     // 16位整型 (int16_t)
-    kInt32,     // 32位整型 (int32_t)
-    kBFloat16   // 谷歌大脑的16位浮点格式
-};
-
 
 size_t calculate_buffer_size(taconn_data_format_t format, size_t element_count); 
 size_t get_element_num(const taconn_inout_attr_t input_attr);

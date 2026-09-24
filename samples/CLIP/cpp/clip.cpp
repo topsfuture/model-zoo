@@ -78,31 +78,78 @@ float dequantize_int8(void* data, size_t idx, int32_t zp, float scale) {
     return ((float)val - (float)zp) * scale;
 }
 
-DequantizeFunc dequantize_funcs[] = {
-    dequantize_float32,   // kFloat32
-    dequantize_float16,   // kFloat16
-    dequantize_uint8,     // kUInt8
-    dequantize_int8,      // kInt8
-};
-
-static uint16_t f32_to_f16(float value) {
-    uint32_t x = *reinterpret_cast<uint32_t*>(&value);
-    uint16_t h = ((x >> 16) & 0x8000) | 
-                ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) |
-                ((x >> 13) & 0x03ff);
-    return h;
+float dequantize_int16(void* data, size_t idx, int32_t zp, float scale) {
+    int16_t val = static_cast<int16_t*>(data)[idx];
+    return ((float)val - (float)zp) * scale;
 }
 
-DataType convert_to_data_type(uint32_t data_format) {
+float dequantize_uint16(void* data, size_t idx, int32_t zp, float scale) {
+    uint16_t val = static_cast<uint16_t*>(data)[idx];
+    return ((float)val - (float)zp) * scale;
+}
+
+
+static uint16_t f32_to_f16(float value) {
+    // 此函数实现将 float32 转换为 float16 格式
+    uint32_t bits = *reinterpret_cast<uint32_t*>(&value);
+    uint16_t sign = (bits >> 31) & 0x1;
+    int exponent = (bits >> 23) & 0xFF;
+    uint32_t fraction = bits & 0x7FFFFF;
+
+    // 处理特殊情况（0，无穷大，NaN）
+    if (exponent == 0 && fraction == 0) {
+        return sign << 15;  // 正零或负零
+    }
+    if (exponent == 0xFF) {
+        if (fraction == 0) {
+            return (sign << 15) | 0x7C00;  // 无穷大
+        } else {
+            return (sign << 15) | 0x7E00;  // NaN
+        }
+    }
+
+    // 调整指数（float32 偏移 127 -> float16 偏移 15）
+    exponent -= 127;
+
+    // 处理下溢情况
+    if (exponent < -14) {
+        fraction = (0x800000 + fraction) >> (13 - exponent - 14);
+        fraction |= (fraction >> 13) & 1;  // 四舍五入
+        return (sign << 15) | fraction;
+    }
+
+    // 处理上溢情况
+    if (exponent > 15) {
+        return (sign << 15) | 0x7C00;  // 上溢到无穷大
+    }
+
+    // 正常情况下的转换
+    exponent += 15;
+    fraction >>= 13;
+
+    // 四舍五入
+    if (fraction & 0x1000) {
+        fraction += 1;
+        if (fraction & 0x8000) {
+            fraction >>= 1;
+            exponent += 1;
+        }
+    }
+
+    return (sign << 15) | (exponent << 10) | (fraction & 0x3FF);
+}
+
+DequantizeFunc get_dequant_func(uint32_t data_format) {
   switch (data_format) {
-      case taconn_data_format_e::TACONN_DATA_FORMAT_FP32: return DataType::kFloat32;
-      case taconn_data_format_e::TACONN_DATA_FORMAT_FP16: return DataType::kFloat16;
-      case taconn_data_format_e::TACONN_DATA_FORMAT_UINT8:   return DataType::kUInt8;
-      case taconn_data_format_e::TACONN_DATA_FORMAT_INT8:    return DataType::kInt8;
-      // 添加其他数据类型的转换
-      default: 
-          std::cerr<<  "Unsupported data format: "<< data_format << std::endl;
-          return DataType::kFloat32; // 默认返回float32
+      case taconn_data_format_e::TACONN_DATA_FORMAT_FP32:   return dequantize_float32;
+      case taconn_data_format_e::TACONN_DATA_FORMAT_FP16:   return dequantize_float16;
+      case taconn_data_format_e::TACONN_DATA_FORMAT_UINT8:  return dequantize_uint8;
+      case taconn_data_format_e::TACONN_DATA_FORMAT_INT8:   return dequantize_int8;
+      case taconn_data_format_e::TACONN_DATA_FORMAT_INT16:  return dequantize_int16;
+      case taconn_data_format_e::TACONN_DATA_FORMAT_UINT16: return dequantize_uint16;
+      default:
+          std::cerr << "Unsupported data format: " << data_format << std::endl;
+          return dequantize_float32;
   }
 }
 
@@ -370,7 +417,7 @@ void CLIP::quantize(float* src, void* dst, size_t num_elements,
     } 
 
     else if (attr.quant_format == taconn_qnt_type_e::TACONN_QNT_TYPE_ASYMMETRIC) {
-        // 对称量化 (int8, uint8)
+        // 对称量化 (int8, uint8, int16, uint16)
         float scale = attr.quant_data.affine.tf_scale;
         int32_t zero_point = attr.quant_data.affine.tf_zero_point;
         
@@ -389,6 +436,20 @@ void CLIP::quantize(float* src, void* dst, size_t num_elements,
                 int32_t quantized = static_cast<int32_t>(std::round(src[i] / scale)) + zero_point;
                 dst_uint8[i] = static_cast<uint8_t>(std::clamp(quantized, 0, 255));
 
+            }
+        }
+        else if (attr.data_format == taconn_data_format_e::TACONN_DATA_FORMAT_INT16) {
+            int16_t* dst_int16 = static_cast<int16_t*>(dst);
+            for (size_t i = 0; i < num_elements; i++) {
+                int32_t quantized = static_cast<int32_t>(std::round(src[i] / scale)) + zero_point;
+                dst_int16[i] = static_cast<int16_t>(std::clamp(quantized, -32768, 32767));
+            }
+        }
+        else if (attr.data_format == taconn_data_format_e::TACONN_DATA_FORMAT_UINT16) {
+            uint16_t* dst_uint16 = static_cast<uint16_t*>(dst);
+            for (size_t i = 0; i < num_elements; i++) {
+                int32_t quantized = static_cast<int32_t>(std::round(src[i] / scale)) + zero_point;
+                dst_uint16[i] = static_cast<uint16_t>(std::clamp(quantized, 0, 65535));
             }
         }
     } 
@@ -739,8 +800,7 @@ std::vector<float> CLIP::encode_text(const std::vector<int>& text, const std::sh
     
     
     // 反量化处理
-    DataType dtype = convert_to_data_type(output_attr.data_format);
-    DequantizeFunc dequant = dequantize_funcs[static_cast<int>(dtype)];
+    DequantizeFunc dequant = get_dequant_func(output_attr.data_format);
     
     float scale = 1.0f;
     int32_t zp = 0;
@@ -839,8 +899,7 @@ std::vector<float> CLIP::encode_image(const std::string image_path , const std::
     }
 
     // 5. 反量化输出数据
-    DataType dtype = convert_to_data_type(image_model_info.outs_attr[0].data_format);
-    DequantizeFunc dequant = dequantize_funcs[static_cast<int>(dtype)];
+    DequantizeFunc dequant = get_dequant_func(image_model_info.outs_attr[0].data_format);
     size_t num_elements = get_element_num(image_model_info.outs_attr[0]);
 
     std::vector<float> result(num_elements);
@@ -995,8 +1054,7 @@ std::vector<float> CLIP::encode_image_memory(const cv::Mat& image,
     }
     
     // 反量化输出数据
-        DataType dtype = convert_to_data_type(image_model_info.outs_attr[0].data_format);
-        DequantizeFunc dequant = dequantize_funcs[static_cast<int>(dtype)];
+        DequantizeFunc dequant = get_dequant_func(image_model_info.outs_attr[0].data_format);
         size_t num_elements = get_element_num(image_model_info.outs_attr[0]);
         
         std::vector<float> result(num_elements);

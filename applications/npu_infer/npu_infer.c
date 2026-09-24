@@ -319,11 +319,47 @@ static char* find_nb_file_in_dir(const char *dir_path)
 
 
 static uint16_t f32_to_f16(float value) {
-    uint32_t x = *(uint32_t*)(&value);
-    uint16_t h = ((x >> 16) & 0x8000) | 
-                ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) |
-                ((x >> 13) & 0x03ff);
-    return h;
+    uint32_t bits = *(uint32_t*)(&value);
+    uint16_t sign = (bits >> 31) & 0x1;
+    int exponent = (bits >> 23) & 0xFF;
+    uint32_t fraction = bits & 0x7FFFFF;
+    
+    // 处理特殊情况
+    if (exponent == 0 && fraction == 0) {
+        return sign << 15;
+    }
+    if (exponent == 0xFF) {
+        if (fraction == 0) {
+            return (sign << 15) | 0x7C00;
+        } else {
+            return (sign << 15) | 0x7E00;
+        }
+    }
+    
+    exponent -= 127;
+    
+    if (exponent < -14) {
+        fraction = (0x800000 + fraction) >> (13 - exponent - 14);
+        fraction |= (fraction >> 13) & 1;
+        return (sign << 15) | fraction;
+    }
+    
+    if (exponent > 15) {
+        return (sign << 15) | 0x7C00;
+    }
+    
+    exponent += 15;
+    fraction >>= 13;
+    
+    if (fraction & 0x1000) {
+        fraction += 1;
+        if (fraction & 0x8000) {
+            fraction >>= 1;
+            exponent += 1;
+        }
+    }
+    
+    return (sign << 15) | (exponent << 10) | (fraction & 0x3FF);
 }
 
 static int set_input_from_file(test_task_t *task, const char *ref_dir)
@@ -467,29 +503,33 @@ float dequantize_float32(void* data, size_t idx, int32_t, float) {
 }
 
 float dequantize_float16(void* data, size_t idx, int32_t, float) {
-    uint16_t h = ((uint16_t*)data)[idx];            
-    uint32_t sign = (h >> 15) & 0x1;
-    uint32_t exponent = (h >> 10) & 0x1F;
-    uint32_t mantissa = h & 0x3FF;
+    uint16_t half = ((const uint16_t*)data)[idx];
+    uint32_t sign     = (half >> 15) & 0x1;
+    uint32_t exponent = (half >> 10) & 0x1F;
+    uint32_t mantissa = half & 0x3FF;
 
+    uint32_t f;
     if (exponent == 0) {
         if (mantissa == 0) {
-            uint32_t f = (sign << 31);
-            return *(float*)&f;                    
+            f = (sign << 31);
+        } else {
+            const uint32_t exp_offset = 103;  
+            f = (sign << 31) | (exp_offset << 23) | (mantissa << 13);
         }
-        const uint32_t exp_offset = 103;
-        uint32_t f = (sign << 31) | (exp_offset << 23) | (mantissa << 13);
-        return *(float*)&f;
-    } 
-    else if (exponent == 31) {
-        uint32_t f = (sign << 31) | 0x7F800000 | (mantissa << 13);
-        return *(float*)&f;
+    } else if (exponent == 31) {
+        // infinity or NaN
+        f = (sign << 31) | 0x7F800000 | (mantissa << 13);
+    } else {
+        // normalized
+        exponent += (127 - 15);
+        f = (sign << 31) | (exponent << 23) | (mantissa << 13);
     }
-    
-    exponent += (127 - 15);
-    uint32_t f = (sign << 31) | (exponent << 23) | (mantissa << 13);
-    return *(float*)&f;
+
+    float result;
+    memcpy(&result, &f, sizeof(result));
+    return result;
 }
+
 
 float dequantize_uint8(void* data, size_t idx, int32_t zp, float scale) {
     uint8_t val = ((uint8_t*)data)[idx];      
@@ -908,7 +948,6 @@ int main(int argc, char **argv)
             gettimeofday(&tv_end, NULL);
             double elapsed = (tv_end.tv_sec - tv_start.tv_sec) +
                              (tv_end.tv_usec - tv_start.tv_usec) / 1e6;
-            printf("Task %d inference time: %.6f seconds\n", i, elapsed);
 
             ta_runtime_invalidate_buffer(&task[i].context, task[i].output);
 

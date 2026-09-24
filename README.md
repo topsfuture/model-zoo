@@ -36,9 +36,12 @@ Model Zoo 提供的例子分别位于 **sample** 和 **application** 两个目�
 | YOLOv11_det  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
 | YOLOv12_det   | 目标检测  | C++    | FP16  | EA6530   |
 | YOLOv26s  | 目标检测 | C++      | FP16 / INT8 | EA6530   |
+| YOLO11_seg   | 实例分割 |  C++   | FP16 | EA6530   |
+| YOLOv8_pose   | 人体关键点检测 | C++ | FP16 | EA6530   |
+| PWC-NET   | 光流估计 |  C++   | FP16 | EA6530   |
+
 
 - **application**：存放一些典型场景的典型应用
-
 
 ## 环境依赖
 
